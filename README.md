@@ -14,6 +14,10 @@
 
 ## Modelo entidad/relacion
 ![](viveros.drawio.png)
+
+## Modificación del modelo
+![](viveros_modi.drawio.png)
+
 ---
 
 ## 1. Entidades
