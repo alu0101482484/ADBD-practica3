@@ -12,7 +12,8 @@
 | `viveros.png` | Imagen del modelo entidad/relación |
 | `README.md` | Este documento |
 
-
+## Modelo entidad/relacion
+![](viveros.drawio.png)
 ---
 
 ## 1. Entidades
