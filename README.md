@@ -84,6 +84,16 @@ La clave completa de una zona es **(Código vivero, Código zona)**. Por ejemplo
 | Objetivo ventas | Descriptor | Decimal ≥ 0 en euros: ventas que se espera que el empleado gestione durante el puesto | `5000.00` |
 | Productividad | Descriptor | Decimal ≥ 0, porcentaje de cumplimiento del objetivo o indicador de rendimiento de la tarea | `112.5` (%) |
 
+### TAREA MANTENIMIENTO
+
+| Atributo | Tipo | Dominio | Ejemplo |
+|---|---|---|---|
+| Código tarea | Identificador | Entero positivo autoincremental | `5021` |
+| Fecha | Descriptor | Fecha (`AAAA-MM-DD`) en que se realiza | `2026-10-05` |
+| Tipo | Descriptor | {`limpieza`, `riego`, `fumigación`, `reparación de estructuras`, `poda`, `abonado`…} | `fumigación` |
+| Descripción | Descriptor | Texto breve, hasta 200 caracteres | `Tratamiento antipulgón en la zona de rosales` |
+| Duración (horas) | Descriptor | Decimal > 0, en horas, 2 decimales | `2.50` |
+
 ### CLIENTE
 
 | Atributo | Tipo | Dominio | Ejemplo |
@@ -169,7 +179,24 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 - PUESTO es débil: la fecha de inicio solo distingue los puestos de un mismo empleado. Si se elimina el empleado, su histórico pierde sentido.
 - Recorriendo sus puestos se obtiene la **productividad de cada empleado**.
 
-### 3.5 gestiona (EMPLEADO – PEDIDO) · **1:N**
+### 3.5 se realiza (ZONA – TAREA MANTENIMIENTO) · dependencia en existencia · **1:N**
+
+`ZONA (1,1) — E se realiza — (0,N) TAREA MANTENIMIENTO`
+
+- Cada tarea de mantenimiento se asocia **exactamente a 1** zona.
+- Una zona puede tener **de 0 a N** tareas de mantenimiento a lo largo del tiempo (una zona recién creada aún no tiene ninguna).
+- Es una **dependencia en existencia** (rombo con **E**, como Empleado–Hijo en los apuntes): una tarea no puede existir sin su zona. No es en identificación porque la tarea tiene su propio código único.
+
+### 3.6 ejecuta (EMPLEADO – TAREA MANTENIMIENTO) · **1:N**
+
+`EMPLEADO (1,1) — ejecuta — (0,N) TAREA MANTENIMIENTO`
+
+- Cada tarea de mantenimiento la ejecuta **exactamente 1** empleado.
+- Un empleado puede ejecutar **de 0 a N** tareas de mantenimiento.
+- Sumando la duración de las tareas por zona o por empleado se obtiene también información sobre el esfuerzo de mantenimiento, complementaria a la productividad de los puestos.
+
+
+### 3.7 gestiona (EMPLEADO – PEDIDO) · **1:N**
 
 `EMPLEADO (1,1) — gestiona — (0,N) PEDIDO`
 
@@ -177,7 +204,7 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 - Cada pedido tiene **exactamente 1** empleado responsable, como indica el enunciado.
 - Comparando los pedidos que gestiona un empleado durante un puesto con el *Objetivo ventas* de ese puesto se mide su **capacidad para lograr objetivos de venta**, otro de los factores de productividad del enunciado.
 
-### 3.6 incluye (PRODUCTO – PEDIDO) · **N:M** · atributos propios: *Cantidad*, *Precio unitario*
+### 3.8 incluye (PRODUCTO – PEDIDO) · **N:M** · atributos propios: *Cantidad*, *Precio unitario*
 
 `PRODUCTO (1,N) — incluye — (0,N) PEDIDO`
 
@@ -185,7 +212,7 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 - Un producto puede aparecer en **de 0 a N** pedidos.
 - El precio unitario se guarda en la relación porque el precio del producto puede cambiar con el tiempo.
 
-### 3.7 realiza (PEDIDO – CLIENTE PLUS) · **1:N**
+### 3.9 realiza (PEDIDO – CLIENTE PLUS) · **1:N**
 
 `PEDIDO (0,N) — realiza — (1,1) CLIENTE PLUS`
 
@@ -193,7 +220,7 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 - Cada pedido lo realiza **exactamente 1** cliente *Tajinaste Plus*.
 - Se relaciona con el subtipo y no con CLIENTE porque solo se controlan los pedidos de los clientes del programa.
 
-### 3.8 Jerarquía CLIENTE → CLIENTE PLUS · **parcial**
+### 3.10 Jerarquía CLIENTE → CLIENTE PLUS · **parcial**
 
 `CLIENTE (1,1) — es un — (0,1) CLIENTE PLUS`
 
@@ -201,7 +228,7 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 - Cada cliente Plus es **exactamente 1** cliente, y un cliente es **como mucho 1** cliente Plus.
 - Al haber un único subtipo, no aplica la distinción exclusiva/solapada.
 
-### 3.9 tiene (CLIENTE PLUS – BONIFICACIÓN) · dependencia en identificación · **1:N**
+### 3.11 tiene (CLIENTE PLUS – BONIFICACIÓN) · dependencia en identificación · **1:N**
 
 `CLIENTE PLUS (1,1) — ID tiene — (0,N) BONIFICACIÓN`
 
@@ -222,4 +249,6 @@ Estas reglas no pueden expresarse gráficamente en el modelo E/R y deberán gara
 6. **Pedidos posteriores al ingreso.** La fecha de un pedido debe ser igual o posterior a la `Fecha ingreso` del cliente en el programa.
 7. **Bonificaciones posteriores al ingreso.** El mes de una bonificación debe ser igual o posterior al mes de `Fecha ingreso` del cliente.
 8. **Valores positivos.** `Cantidad > 0`; `Precio`, `Precio unitario` e `Importe` ≥ 0.
-
+9. **Duración de las tareas de mantenimiento.** `Duración > 0` horas.
+10. **Mantenimiento ejecutado por personal destinado en la zona.** En la fecha de una tarea de mantenimiento, el empleado que la ejecuta debería tener un puesto vigente en el **mismo vivero** que la zona de la tarea (no puede estar destinado en otro vivero ese día).
+11. **Fecha de mantenimiento coherente.** La fecha de la tarea debe ser igual o posterior a la `Fecha contratación` del empleado que la ejecuta.
