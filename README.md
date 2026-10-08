@@ -2,9 +2,7 @@
 
 **Asignatura:** Administración y Diseño de Bases de Datos — Grado en Ingeniería Informática (ULL)
 
-**Autor:** Claudia Díaz González
-
-**ALU:** alu0101482484
+**Autores:** Claudia Díaz González, Ramón Izquierdo Izquierdo
 
 ## Contenido del repositorio
 
@@ -25,6 +23,7 @@
 | **ZONA** | Débil (en identificación respecto de VIVERO) | Espacio físico dentro de un vivero donde se ubican productos y trabajan empleados (zona exterior, almacén, invernadero…). El código de una zona solo es único dentro de su vivero: puede existir un "almacén" en cada vivero. |
 | **PRODUCTO** | Fuerte | Artículo que comercializa la empresa: plantas, productos de jardinería o decoración. |
 | **EMPLEADO** | Fuerte | Persona que trabaja para la empresa y que es destinada a viveros y zonas según la época del año. |
+| **PUESTO** | Débil (en identificación respecto de EMPLEADO) | Cada periodo de trabajo de un empleado en una zona concreta de un vivero, desempeñando una tarea. El conjunto de puestos de un empleado es su **histórico de puestos**, y cada puesto registra la **productividad** obtenida en él. |
 | **CLIENTE** | Fuerte | Cliente de la empresa. |
 | **CLIENTE PLUS** | Subtipo de CLIENTE | Cliente que pertenece al programa de fidelización *Tajinaste Plus*. Solo de estos clientes se registran pedidos y bonificaciones. |
 | **PEDIDO** | Fuerte | Pedido realizado por un cliente *Tajinaste Plus* y gestionado por un único empleado responsable. |
@@ -73,6 +72,16 @@ La clave completa de una zona es **(Código vivero, Código zona)**. Por ejemplo
 | Apellidos | Descriptor | Cadena de hasta 80 caracteres | `Hernández Pérez` |
 | Email | Descriptor | Dirección de correo válida | `carmen.hernandez@tajinaste.es` |
 | Fecha contratación | Descriptor | Fecha (`AAAA-MM-DD`) | `2023-03-01` |
+
+### PUESTO
+
+| Atributo | Tipo | Dominio | Ejemplo |
+|---|---|---|---|
+| Fecha inicio | Discriminante | Fecha (`AAAA-MM-DD`) en que el empleado empieza en el puesto | `2026-06-01` |
+| Fecha fin | Descriptor | Fecha (`AAAA-MM-DD`), o nulo si es el puesto actual | `2026-09-30` / `NULL` |
+| Tarea | Descriptor | {`riego`, `poda`, `atención al cliente`, `reposición`, `caja`, `logística`…} | `atención al cliente` |
+| Objetivo ventas | Descriptor | Decimal ≥ 0 en euros: ventas que se espera que el empleado gestione durante el puesto | `5000.00` |
+| Productividad | Descriptor | Decimal ≥ 0, porcentaje de cumplimiento del objetivo o indicador de rendimiento de la tarea | `112.5` (%) |
 
 ### CLIENTE
 
@@ -129,83 +138,87 @@ La clave completa de una bonificación es **(DNI cliente, Mes)**. Por ejemplo, `
 
 `VIVERO (1,1) — ID tiene — (1,N) ZONA`
 
-- Un vivero tiene **como mínimo 1 y como máximo N** zonas, porque todo vivero tiene al menos una zona donde ubicar productos.
+- Un vivero tiene **de 1 a N** zonas: todo vivero tiene al menos una zona donde ubicar productos.
 - Una zona pertenece **exactamente a 1** vivero.
-- ZONA no puede identificarse por sí sola: su código solo es único dentro de su vivero. Si desaparece el vivero, sus zonas carecen de sentido.
+- ZONA no se identifica por sí sola; si desaparece el vivero, sus zonas carecen de sentido.
 
 ### 3.2 almacena (ZONA – PRODUCTO) · **N:M** · atributo propio: *Stock*
 
 `ZONA (0,N) — almacena — (0,N) PRODUCTO`
 
-- En una zona puede haber **de 0 a N** productos asignados. Una zona recién creada puede estar vacía.
-- Un producto puede estar asignado a **de 0 a N** zonas, de uno o varios viveros. Un producto nuevo del catálogo puede no estar aún en ninguna zona.
-- El stock depende a la vez del producto y de la zona, por eso es atributo de la relación. Responde a "cuánto hay disponible de cada producto en cada zona en la que esté asignado".
+- En una zona puede haber **de 0 a N** productos asignados (una zona nueva puede estar vacía).
+- Un producto puede estar asignado a **de 0 a N** zonas, de uno o varios viveros.
+- El stock depende a la vez del producto y de la zona: responde a "cuánto hay disponible de cada producto en cada zona en la que esté asignado".
 
-### 3.3 trabaja en (ZONA – EMPLEADO) · **N:M** · atributos propios: *Fecha inicio*, *Fecha fin*, *Tarea*
+### 3.3 se desarrolla en (ZONA – PUESTO) · **1:N**
 
-`ZONA (0,N) — trabaja en — (0,N) EMPLEADO`
+`ZONA (1,1) — se desarrolla en — (0,N) PUESTO`
 
-- A lo largo del tiempo, un empleado puede haber trabajado en **de 0 a N** zonas. Un empleado recién contratado puede no tener destino aún.
-- En una zona pueden haber trabajado **de 0 a N** empleados.
-- Cada ocurrencia de la relación es un **puesto**: una zona concreta, durante un periodo concreto, desempeñando una tarea. El conjunto de ocurrencias forma el **histórico de puestos** que pide el enunciado. Con él se puede medir la productividad de cada zona a lo largo del tiempo y de cada empleado.
-- El vivero de destino no se almacena aparte, porque se deduce de la zona, que pertenece a un único vivero.
-- Un mismo empleado puede volver a la misma zona en otra época. Por eso **Fecha inicio forma parte de la identificación** de la relación: (Código vivero, Código zona, DNI empleado, Fecha inicio).
+- Cada puesto se desarrolla **exactamente en 1** zona ("en cada vivero que desempeñe una tarea lo hará en una zona").
+- En una zona se han desarrollado **de 0 a N** puestos a lo largo del tiempo.
+- El vivero del puesto no se guarda aparte: se deduce de la zona, que pertenece a un solo vivero.
+- Agrupando los puestos de una zona por periodos se obtiene la **productividad de la zona a lo largo del tiempo**.
 
-### 3.4 gestiona (EMPLEADO – PEDIDO) · **1:N**
+### 3.4 ocupa (EMPLEADO – PUESTO) · dependencia en identificación · **1:N**
+
+`EMPLEADO (1,1) — ID ocupa — (0,N) PUESTO`
+
+- Un empleado ocupa **de 0 a N** puestos a lo largo de su vida laboral (un recién contratado puede no tener destino todavía). Ese conjunto es su **histórico de puestos**.
+- Cada puesto lo ocupa **exactamente 1** empleado.
+- PUESTO es débil: la fecha de inicio solo distingue los puestos de un mismo empleado. Si se elimina el empleado, su histórico pierde sentido.
+- Recorriendo sus puestos se obtiene la **productividad de cada empleado**.
+
+### 3.5 gestiona (EMPLEADO – PEDIDO) · **1:N**
 
 `EMPLEADO (1,1) — gestiona — (0,N) PEDIDO`
 
-- Un empleado gestiona **de 0 a N** pedidos. No todos los empleados atienden pedidos.
+- Un empleado gestiona **de 0 a N** pedidos (no todos los empleados atienden pedidos).
 - Cada pedido tiene **exactamente 1** empleado responsable, como indica el enunciado.
-- Permite medir la capacidad de cada empleado para lograr objetivos de venta.
+- Comparando los pedidos que gestiona un empleado durante un puesto con el *Objetivo ventas* de ese puesto se mide su **capacidad para lograr objetivos de venta**, otro de los factores de productividad del enunciado.
 
-### 3.5 incluye (PEDIDO – PRODUCTO) · **N:M** · atributos propios: *Cantidad*, *Precio unitario*
+### 3.6 incluye (PRODUCTO – PEDIDO) · **N:M** · atributos propios: *Cantidad*, *Precio unitario*
 
 `PRODUCTO (1,N) — incluye — (0,N) PEDIDO`
 
-- Un pedido incluye **de 1 a N** productos, porque no existen pedidos vacíos.
+- Un pedido incluye **de 1 a N** productos (no hay pedidos vacíos).
 - Un producto puede aparecer en **de 0 a N** pedidos.
-- La cantidad y el precio aplicado dependen del pedido y del producto. El precio unitario se guarda en la relación porque el precio del producto puede cambiar con el tiempo.
+- El precio unitario se guarda en la relación porque el precio del producto puede cambiar con el tiempo.
 
-### 3.6 realiza (CLIENTE PLUS – PEDIDO) · **1:N**
+### 3.7 realiza (PEDIDO – CLIENTE PLUS) · **1:N**
 
 `PEDIDO (0,N) — realiza — (1,1) CLIENTE PLUS`
 
-- Un cliente *Tajinaste Plus* realiza **de 0 a N** pedidos desde su ingreso en el programa. Un cliente recién dado de alta aún no ha pedido nada.
+- Un cliente *Tajinaste Plus* realiza **de 0 a N** pedidos desde su ingreso en el programa.
 - Cada pedido lo realiza **exactamente 1** cliente *Tajinaste Plus*.
-- La relación se establece con el subtipo y no con CLIENTE, porque solo se controlan los pedidos de los clientes del programa.
+- Se relaciona con el subtipo y no con CLIENTE porque solo se controlan los pedidos de los clientes del programa.
 
-### 3.7 Jerarquía CLIENTE → CLIENTE PLUS · **parcial**
+### 3.8 Jerarquía CLIENTE → CLIENTE PLUS · **parcial**
 
 `CLIENTE (1,1) — es un — (0,1) CLIENTE PLUS`
 
-- **Parcial:** puede haber clientes que no pertenezcan al programa *Tajinaste Plus*.
-- Cada cliente Plus es **exactamente 1** cliente (1,1), y un cliente es **como mucho 1** cliente Plus (0,1).
-- Al haber un único subtipo, no se aplica la distinción entre jerarquía exclusiva y solapada.
+- **Parcial:** puede haber clientes que no pertenezcan al programa.
+- Cada cliente Plus es **exactamente 1** cliente, y un cliente es **como mucho 1** cliente Plus.
+- Al haber un único subtipo, no aplica la distinción exclusiva/solapada.
 
-### 3.8 tiene (CLIENTE PLUS – BONIFICACIÓN) · dependencia en identificación · **1:N**
+### 3.9 tiene (CLIENTE PLUS – BONIFICACIÓN) · dependencia en identificación · **1:N**
 
 `CLIENTE PLUS (1,1) — ID tiene — (0,N) BONIFICACIÓN`
 
-- Un cliente Plus tiene **de 0 a N** bonificaciones, una por cada mes con compras.
+- Un cliente Plus tiene **de 0 a N** bonificaciones, como mucho una por mes.
 - Cada bonificación pertenece a **exactamente 1** cliente Plus.
-- BONIFICACIÓN es una entidad débil: el mes solo la distingue dentro de un mismo cliente.
 
 ---
 
 ## 4. Restricciones semánticas
 
-Las siguientes reglas no pueden expresarse gráficamente en el modelo E/R y deberán garantizarse en fases posteriores, mediante restricciones `CHECK`, *triggers* o la lógica de la aplicación.
+Estas reglas no pueden expresarse gráficamente en el modelo E/R y deberán garantizarse en fases posteriores (restricciones `CHECK`, *triggers* o lógica de aplicación).
 
-1. **Un único destino a la vez.** Los periodos `[Fecha inicio, Fecha fin]` de un mismo empleado en "trabaja en" **no pueden solaparse**. El enunciado indica que un empleado "nunca va a tener dos destinos" simultáneos. Como mucho puede haber un puesto con `Fecha fin` nula, que es el actual.
-2. **Coherencia de fechas en los puestos.** `Fecha fin ≥ Fecha inicio` cuando `Fecha fin` no es nula, y `Fecha inicio ≥ Fecha contratación` del empleado.
-3. **Stock no negativo.** `Stock ≥ 0`.
-4. **Pedidos posteriores al ingreso.** La fecha de un pedido debe ser **igual o posterior** a la `Fecha ingreso` del cliente en el programa, porque solo se controlan los pedidos realizados desde su ingreso.
-5. **Bonificaciones posteriores al ingreso.** El mes de una bonificación debe ser igual o posterior al mes de `Fecha ingreso` del cliente.
-6. **Atributos derivados.**
-   - `Importe total` de un pedido = Σ (`Cantidad` × `Precio unitario`) de sus productos.
-   - `Volumen compras` de una bonificación = Σ `Importe total` de los pedidos del cliente cuya fecha cae en ese mes.
-   - El `Importe` de la bonificación se calcula en función de ese volumen, según los tramos que defina la empresa.
-7. **Georreferenciación válida.** Latitud ∈ [-90, 90] y longitud ∈ [-180, 180]. Además, las coordenadas de una zona deberían quedar próximas a las de su vivero.
-8. **Valores positivos.** `Cantidad > 0`, `Precio ≥ 0`, `Precio unitario ≥ 0`, `Importe ≥ 0`.
-9. **Gestión de pedidos.** El empleado responsable de un pedido debe estar dado de alta (contratado) en la fecha del pedido.
+1. **Un único destino a la vez.** Los periodos `[Fecha inicio, Fecha fin]` de los puestos de un mismo empleado **no pueden solaparse**, porque un empleado "nunca va a tener dos destinos". Como mucho un puesto por empleado puede tener `Fecha fin` nula (el actual).
+2. **Coherencia de fechas en los puestos.** `Fecha fin ≥ Fecha inicio` cuando no es nula, y `Fecha inicio ≥ Fecha contratación` del empleado.
+3. **Productividad y objetivos.** `Productividad ≥ 0` y `Objetivo ventas ≥ 0`. El objetivo de ventas solo tiene sentido en puestos cuya tarea implica atender pedidos.
+4. **Pedido gestionado por un empleado en activo.** En la fecha de un pedido, su empleado responsable debe tener un puesto vigente (fecha del pedido dentro de `[Fecha inicio, Fecha fin]` de alguno de sus puestos).
+5. **Stock no negativo.** `Stock ≥ 0`.
+6. **Pedidos posteriores al ingreso.** La fecha de un pedido debe ser igual o posterior a la `Fecha ingreso` del cliente en el programa.
+7. **Bonificaciones posteriores al ingreso.** El mes de una bonificación debe ser igual o posterior al mes de `Fecha ingreso` del cliente.
+8. **Valores positivos.** `Cantidad > 0`; `Precio`, `Precio unitario` e `Importe` ≥ 0.
+
