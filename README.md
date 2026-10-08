@@ -41,8 +41,8 @@
 | Nombre | Descriptor | Cadena de hasta 60 caracteres | `Vivero La Laguna` |
 | Teléfono | Descriptor | Cadena de 9 dígitos, opcionalmente con prefijo internacional | `922123456` |
 | Georreferenciación | Compuesto | (Latitud, Longitud) | `(28.4874, -16.3159)` |
-| └ Latitud | Simple | Decimal en [-90, 90], 6 decimales | `28.487400` |
-| └ Longitud | Simple | Decimal en [-180, 180], 6 decimales | `-16.315900` |
+| Latitud | Simple | Decimal en [-90, 90], 6 decimales | `28.487400` |
+| Longitud | Simple | Decimal en [-180, 180], 6 decimales | `-16.315900` |
 
 ### ZONA
 
